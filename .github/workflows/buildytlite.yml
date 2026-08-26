@@ -133,7 +133,10 @@ jobs:
 
       - name: Download and Validate IPA
         run: |
-          curl --fail --location --retry 3 --retry-delay 2 --retry-all-errors --silent --show-error "${{ inputs.ipa_url }}" -o youtube.ipa
+          if ! curl --fail --location --retry 3 --retry-delay 2 --retry-all-errors --silent --show-error "${{ inputs.ipa_url }}" -o youtube.ipa; then
+            echo "::warning::curl download failed; retrying with wget compatibility fallback."
+            wget "${{ inputs.ipa_url }}" --tries=4 --waitretry=2 --retry-connrefused --quiet --no-verbose -O youtube.ipa
+          fi
           file_type=$(file --mime-type -b youtube.ipa)
           if [[ "$file_type" != "application/x-ios-app" && "$file_type" != "application/zip" ]]; then
             echo "::error::Validation failed: The downloaded file is not a valid IPA. Detected type: $file_type."
